@@ -14,7 +14,7 @@ import { MoversMassiveApiService } from './services/movers-massive-api.service';
   imports: [
     TypeOrmModule.forFeature([Stock, StockPrice, MoverResult]),
     HttpModule,
-    ConfigModule, // 👈 เพิ่ม ConfigModule เพื่อดึงค่า MASSIVE_API_KEY
+    ConfigModule, // เพิ่ม ConfigModule เพื่อดึงค่า MASSIVE_API_KEY
   ],
   controllers: [MoversController],
   providers: [MoversService, MoversRepository, MoversMassiveApiService],

@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { MoverResult } from '../entities/mover-result.entity';
 import { StockPrice } from '../entities/stock-price.entity';
 import { MassiveApiPricePoint, PriceComparisonRow } from '../interfaces/movers.interface';
 
@@ -16,6 +17,9 @@ export class MoversRepository {
   constructor(
     @InjectRepository(StockPrice)
     private readonly priceRepo: Repository<StockPrice>,
+
+    @InjectRepository(MoverResult)
+    private readonly moverResultRepo: Repository<MoverResult>,
   ) {}
 
   /**
@@ -124,5 +128,36 @@ export class MoversRepository {
     }
 
     return comparisons;
+  }
+
+//เก็บเฉพาะ "ผลลัพธ์ล่าสุด"
+  async saveMoverResults(payload: {
+    period: string;
+    type: string;
+    data: any[];
+    calculatedAt: Date;
+  }): Promise<void> {
+    if (!payload.data || payload.data.length === 0) return;
+
+    // 1. ลบข้อมูลเก่าที่เป็น period และ type เดียวกันออกก่อน
+    await this.moverResultRepo.delete({
+      period: payload.period,
+      type: payload.type,
+    });
+
+    // 2. บันทึกผลลัพธ์ใหม่เข้าไปแทนที่
+    const records = payload.data.map((item) => ({
+      period: payload.period,
+      type: payload.type,
+      symbol: item.symbol,
+      currentPrice: item.current_price,
+      previousClosePrice: item.previous_close_price,
+      changeAmount: item.change_amount,
+      changePercent: item.change_percent,
+      volatility: item.volatility,
+      calculatedAt: payload.calculatedAt,
+    }));
+
+    await this.moverResultRepo.save(records);
   }
 }

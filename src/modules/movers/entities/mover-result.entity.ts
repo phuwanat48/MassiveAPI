@@ -8,8 +8,8 @@ export class MoverResult {
   @Column({ type: 'varchar', length: 4 })
   period: string; // 1D | 1W | 1M
 
-  @Column({ type: 'varchar', length: 10 })
-  type: string; // gainers | losers
+  @Column({ type: 'varchar', length: 20 })
+  type: string; // gainers | losers| most_volatile
 
   @Column({ type: 'varchar', length: 10 })
   symbol: string;

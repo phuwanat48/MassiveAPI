@@ -20,7 +20,7 @@ export class MoversMassiveApiService {
     );
     this.apiKey = this.configService.get<string>('MASSIVE_API_KEY', '');
   }
-
+  //ดึงข้อมูลราคาหุ้นรายวัน
   private async fetchGroupedDaily(dateStr: string): Promise<MassiveApiPricePoint[]> {
     try {
       const url = `${this.baseUrl}/v2/aggs/grouped/locale/us/market/stocks/${dateStr}`;

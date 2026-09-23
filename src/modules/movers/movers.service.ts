@@ -23,9 +23,9 @@ export class MoversService {
     if (!isDataComplete) {
       this.logger.log(`Data incomplete for period=${period}, fetching from Massive API...`);
       const fetched = await this.massiveApi.fetchLatestPrices(period);
-
-      if (fetched && fetched.length > 0) {
-        // ส่งเฉพาะ fetched (1 argument) ตรงตาม Signature ของ MoversRepository
+      
+      if (fetched && fetched.length > 0) { // เเช็กว่ามีข้อมูลส่งกลับมาไหม และ เช็กว่ามีรายการข้างในไหม
+        
         await this.repository.upsertPrices(fetched);
       }
     }
@@ -54,7 +54,7 @@ export class MoversService {
       };
     });
 
-    // 4. กรอง และ เรียงลำดับตาม type
+   // 4. กรอง และ เรียงลำดับตาม type
     let filtered = calculated;
     if (type === 'gainer') {
       filtered = calculated
@@ -71,6 +71,15 @@ export class MoversService {
 
     const data = filtered.slice(0, limit);
 
+    // 5. บันทึกผลลัพธ์ลงตาราง mover_results (วางไว้ตรงนี้ ก่อน return)
+    await this.repository.saveMoverResults({
+      period,
+      type,
+      data,
+      calculatedAt: new Date(),
+    });
+
+    // 6. ส่ง Response กลับ
     return {
       period,
       type,
@@ -78,5 +87,5 @@ export class MoversService {
       total_results: data.length,
       calculated_at: new Date().toISOString(),
     };
-  }
+  } // <--- ปีกกาปิดฟังก์ชัน calculate อยู่ตรงนี้
 }
