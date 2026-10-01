@@ -4,6 +4,11 @@ import { ConfigService } from '@nestjs/config';
 import { lastValueFrom } from 'rxjs';
 import { MassiveApiPricePoint } from '../interfaces/movers.interface';
 
+interface MassiveApiGroupedResultItem {
+  T: string;
+  c: number;
+}
+
 @Injectable()
 export class MoversMassiveApiService {
   private readonly logger = new Logger(MoversMassiveApiService.name);
@@ -20,7 +25,8 @@ export class MoversMassiveApiService {
     );
     this.apiKey = this.configService.get<string>('MASSIVE_API_KEY', '');
   }
-  //ดึงข้อมูลราคาหุ้นรายวัน
+
+  // ดึงข้อมูลราคาหุ้นรายวัน
   private async fetchGroupedDaily(dateStr: string): Promise<MassiveApiPricePoint[]> {
     try {
       const url = `${this.baseUrl}/v2/aggs/grouped/locale/us/market/stocks/${dateStr}`;
@@ -30,15 +36,16 @@ export class MoversMassiveApiService {
         }),
       );
 
-      const results = response.data?.results || [];
-      return results.map((item: any) => ({
+      const results: MassiveApiGroupedResultItem[] = response.data?.results || [];
+      return results.map((item) => ({
         symbol: item.T,
         companyName: item.T,
         priceDate: dateStr,
         closePrice: Number(item.c || 0),
       }));
     } catch (error) {
-      this.logger.error(`Failed to fetch for date ${dateStr}: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Failed to fetch for date ${dateStr}: ${errorMessage}`);
       return [];
     }
   }

@@ -1,9 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 import { MoverResult } from '../entities/mover-result.entity';
 import { StockPrice } from '../entities/stock-price.entity';
 import { MassiveApiPricePoint, PriceComparisonRow } from '../interfaces/movers.interface';
+import { CalculatedMoverItem } from '../movers.service';
 
 export const TARGET_SYMBOLS = [
   'MSFT', 'NVDA', 'LLY', 'JNJ', 'JPM',
@@ -54,13 +56,13 @@ export class MoversRepository {
     const targetPrices = prices.filter((item) => TARGET_SYMBOLS.includes(item.symbol));
     if (targetPrices.length === 0) return;
 
-    const cleanData = targetPrices.map((item) => ({
+    const cleanData: QueryDeepPartialEntity<StockPrice>[] = targetPrices.map((item) => ({
       symbol: item.symbol,
       priceDate: item.priceDate,
       closePrice: Number(item.closePrice) || 0,
     }));
 
-    await this.priceRepo.upsert(cleanData as any, ['symbol', 'priceDate']);
+    await this.priceRepo.upsert(cleanData, ['symbol', 'priceDate']);
   }
 
   /**
@@ -114,7 +116,7 @@ export class MoversRepository {
     const comparisons: PriceComparisonRow[] = [];
     for (const curr of latestPrices) {
       const prevPrice = prevPriceMap.get(curr.symbol);
-      const currObj = curr as any;
+      const currObj = curr as StockPrice & { companyName?: string; company_name?: string };
 
       if (prevPrice !== undefined && prevPrice > 0) {
         comparisons.push({
@@ -130,11 +132,11 @@ export class MoversRepository {
     return comparisons;
   }
 
-//เก็บเฉพาะ "ผลลัพธ์ล่าสุด"
+  //เก็บเฉพาะ "ผลลัพธ์ล่าสุด"
   async saveMoverResults(payload: {
     period: string;
     type: string;
-    data: any[];
+    data: CalculatedMoverItem[];
     calculatedAt: Date;
   }): Promise<void> {
     if (!payload.data || payload.data.length === 0) return;

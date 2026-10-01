@@ -3,6 +3,16 @@ import { PriceComparisonRow } from './interfaces/movers.interface';
 import { MoversRepository } from './repositories/movers.repository';
 import { MoversMassiveApiService } from './services/movers-massive-api.service';
 
+export interface CalculatedMoverItem {
+  symbol: string;
+  company_name: string;
+  current_price: number;
+  previous_close_price: number;
+  change_amount: number;
+  change_percent: number;
+  volatility: number;
+}
+
 @Injectable()
 export class MoversService {
   private readonly logger = new Logger(MoversService.name);
@@ -24,8 +34,7 @@ export class MoversService {
       this.logger.log(`Data incomplete for period=${period}, fetching from Massive API...`);
       const fetched = await this.massiveApi.fetchLatestPrices(period);
       
-      if (fetched && fetched.length > 0) { // เเช็กว่ามีข้อมูลส่งกลับมาไหม และ เช็กว่ามีรายการข้างในไหม
-        
+      if (fetched && fetched.length > 0) {
         await this.repository.upsertPrices(fetched);
       }
     }
@@ -34,7 +43,7 @@ export class MoversService {
     const comparisons = await this.repository.getPriceComparisons(period);
 
     // 3. คำนวณเปอร์เซ็นต์การเปลี่ยนแปลง และ Volatility
-    const calculated = comparisons.map((item: PriceComparisonRow) => {
+    const calculated: CalculatedMoverItem[] = comparisons.map((item: PriceComparisonRow) => {
       const changeAmount = item.currentPrice - item.previousClosePrice;
       const changePercent =
         item.previousClosePrice > 0
@@ -54,24 +63,24 @@ export class MoversService {
       };
     });
 
-   // 4. กรอง และ เรียงลำดับตาม type
+    // 4. กรอง และ เรียงลำดับตาม type (ถอด any ออกให้ TypeScript infer type อัตโนมัติ)
     let filtered = calculated;
     if (type === 'gainer') {
       filtered = calculated
-        .filter((item: any) => item.change_percent > 0)
-        .sort((a: any, b: any) => b.change_percent - a.change_percent);
+        .filter((item) => item.change_percent > 0)
+        .sort((a, b) => b.change_percent - a.change_percent);
     } else if (type === 'loser') {
       filtered = calculated
-        .filter((item: any) => item.change_percent < 0)
-        .sort((a: any, b: any) => a.change_percent - b.change_percent);
+        .filter((item) => item.change_percent < 0)
+        .sort((a, b) => a.change_percent - b.change_percent);
     } else if (type === 'most_volatile') {
       filtered = calculated
-        .sort((a: any, b: any) => b.volatility - a.volatility);
+        .sort((a, b) => b.volatility - a.volatility);
     }
 
     const data = filtered.slice(0, limit);
 
-    // 5. บันทึกผลลัพธ์ลงตาราง mover_results (วางไว้ตรงนี้ ก่อน return)
+    // 5. บันทึกผลลัพธ์ลงตาราง mover_results (ก่อน return)
     await this.repository.saveMoverResults({
       period,
       type,
@@ -87,5 +96,5 @@ export class MoversService {
       total_results: data.length,
       calculated_at: new Date().toISOString(),
     };
-  } // <--- ปีกกาปิดฟังก์ชัน calculate อยู่ตรงนี้
+  } 
 }

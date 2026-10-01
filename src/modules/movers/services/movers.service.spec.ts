@@ -6,8 +6,15 @@ import { MoversMassiveApiService } from './movers-massive-api.service';
 
 describe('MoversService', () => {
   let service: MoversService;
-  let repo: any;
-  let apiService: any;
+  let repo: {
+    checkDataCompleteness: jest.Mock;
+    upsertPrices: jest.Mock;
+    getPriceComparisons: jest.Mock;
+    saveMoverResults: jest.Mock; // <--- เพิ่มตรงนี้
+  };
+  let apiService: {
+    fetchLatestPrices: jest.Mock;
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -19,6 +26,7 @@ describe('MoversService', () => {
             checkDataCompleteness: jest.fn(),
             upsertPrices: jest.fn(),
             getPriceComparisons: jest.fn(),
+            saveMoverResults: jest.fn(), // <--- เพิ่มตรงนี้
           },
         },
         {
